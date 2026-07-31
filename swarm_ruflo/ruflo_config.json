@@ -1,0 +1,22 @@
+{
+  "orchestrator": "Ruflo",
+  "version": "1.0.0",
+  "agents": [
+    {
+      "id": "Agent_BI",
+      "role": "business_intelligence",
+      "description": "Automatización y análisis de datos en dbt/Qlik",
+      "tools": ["dbt", "Qlik"],
+      "input_path": "./nodes/bi",
+      "output_path": "./nodes/bi"
+    },
+    {
+      "id": "Agent_Docs",
+      "role": "documentation",
+      "description": "Exporta documentación técnica en Markdown",
+      "tools": ["Markdown"],
+      "input_path": "./nodes/docs",
+      "output_path": "../notebooklm_docs"
+    }
+  ]
+}
