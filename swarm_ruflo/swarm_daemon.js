@@ -24,19 +24,24 @@ function writeQueue(queue) {
   fs.writeFileSync(QUEUE_PATH, JSON.stringify(queue, null, 2), 'utf8');
 }
 
-function processQueue() {
-  const queue = readQueue();
+async function processQueue() {
+  try {
+    const queue = readQueue();
 
-  if (queue.length === 0) {
-    console.log(`[swarm_daemon] ${new Date().toISOString()} - cola vacía, nada que procesar`);
-    return;
+    if (queue.length === 0) {
+      console.log(`[swarm_daemon] ${new Date().toISOString()} - cola vacía, nada que procesar`);
+      return;
+    }
+
+    const task = queue.shift();
+    writeQueue(queue);
+
+    console.log(`[swarm_daemon] Procesando tarea FIFO para ${task.agent}: ${task.description}`);
+    dispatchTask(task.agent, task.description, task.payload || {});
+  } catch (err) {
+    logLine(`agent=swarm_daemon status=QUEUE_ERROR detail="${err.message}"`);
+    console.error(`[swarm_daemon] Error al evaluar tasks_queue.json, el daemon sigue activo: ${err.message}`);
   }
-
-  const task = queue.shift();
-  writeQueue(queue);
-
-  console.log(`[swarm_daemon] Procesando tarea FIFO para ${task.agent}: ${task.description}`);
-  dispatchTask(task.agent, task.description, task.payload || {});
 }
 
 process.on('uncaughtException', (err) => {
@@ -45,4 +50,8 @@ process.on('uncaughtException', (err) => {
 });
 
 console.log(`[swarm_daemon] Iniciado. Polling cada ${POLL_INTERVAL_MS / 1000}s sobre ${QUEUE_PATH}`);
-setInterval(processQueue, POLL_INTERVAL_MS);
+setInterval(() => {
+  processQueue().catch((err) => {
+    logLine(`agent=swarm_daemon status=QUEUE_ERROR_UNHANDLED detail="${err.message}"`);
+  });
+}, POLL_INTERVAL_MS);
